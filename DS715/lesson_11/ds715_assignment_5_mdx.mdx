@@ -1,0 +1,154 @@
+//1) Aggregates by combinations of supplier name and product name?
+
+SELECT 
+	NON EMPTY {
+		[Measures].[Price - Tb Transactions],
+		[Measures].[Quantity - Tb Transactions] } ON COLUMNS,
+	NON EMPTY {
+		([Tb Supplier].[Name].[Name].ALLMEMBERS, 
+		[Tb Product].[Name].[Name].ALLMEMBERS ) } ON ROWS
+FROM DS715
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//2) Aggregates by supplier states?
+
+SELECT 
+	NON EMPTY {
+		[Measures].[Price - Tb Transactions],
+		[Measures].[Quantity - Tb Transactions] } ON COLUMNS,
+	NON EMPTY {
+		([Tb Supplier].[State].[State].ALLMEMBERS) } ON ROWS
+FROM DS715
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//3) Number of transactions between supplier-city-consumer-city pairs?
+
+SELECT 
+	NON EMPTY {
+		[Measures].[Tb Transactions Count] } ON COLUMNS,
+	NON EMPTY {
+		([Tb Supplier].[City].[City].ALLMEMBERS,
+		[Tb Consumer].[City].[City].ALLMEMBERS) } ON ROWS
+FROM DS715
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//4) Name of each product and quantity Wisconsin suppliers sold of that product?
+SELECT 
+	NON EMPTY {
+		[Measures].[Quantity - Tb Transactions] } ON COLUMNS,
+	NON EMPTY {
+		([Tb Product].[Name].[Name].ALLMEMBERS) } ON ROWS
+FROM DS715
+WHERE [Tb Supplier].[State].[Wisconsin]
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//5) Quantity of sales aggregated by product and supplier state?
+SELECT 
+	NON EMPTY {
+		[Measures].[Quantity - Tb Transactions] } ON COLUMNS,
+	NON EMPTY {
+		([Tb Product].[Name].[Name].ALLMEMBERS, 
+		[Tb Supplier].[State].[State].ALLMEMBERS) } ON ROWS
+FROM DS715
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//6) Quantity of computer sales aggregated by suppliers in Wisconsin?
+SELECT NON EMPTY {
+	[Measures].[Quantity - Tb Transactions]} ON COLUMNS,
+NON EMPTY {
+	[Tb Supplier].[Name].[Name].ALLMEMBERS} ON ROWS
+FROM DS715
+WHERE ([Tb Product].[Name].Computer,
+		[Tb Supplier].[State].Wisconsin)
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//7) Quantity of auto sales by each supplier from Wisconsin to 
+//each auto consumer in Illinois?
+SELECT NON EMPTY {
+	[Measures].[Quantity - Tb Transactions]} ON COLUMNS,
+NON EMPTY {
+	([Tb Supplier].[Name].[Name].ALLMEMBERS,
+	[Tb Consumer].[Name].[Name].ALLMEMBERS)} ON ROWS
+FROM DS715
+WHERE ([Tb Product].[Name].Auto,
+		[Tb Supplier].[State].Wisconsin,
+		[Tb Consumer].[State].Illinois)
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//8) Quantity of each product sold by each supplier in Madison 
+//to each consumer in Illinois?
+SELECT NON EMPTY {
+	[Measures].[Quantity - Tb Transactions]} ON COLUMNS,
+NON EMPTY {
+	([Tb Product].[Name].[Name].ALLMEMBERS,
+	[Tb Supplier].[Name].[Name].ALLMEMBERS,
+	[Tb Consumer].[Name].[Name].ALLMEMBERS)} ON ROWS
+FROM DS715
+WHERE ([Tb Supplier].[City].Madison,
+		[Tb Consumer].[State].Illinois)
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//9) Quantity of each product sold by supplier Bernstein to consumers in Chicago?
+SELECT NON EMPTY {
+	[Measures].[Quantity - Tb Transactions]} ON COLUMNS,
+NON EMPTY {
+	([Tb Product].[Name].[Name].ALLMEMBERS,
+	[Tb Supplier].[Name].[Name].ALLMEMBERS,
+	[Tb Consumer].[Name].[Name].ALLMEMBERS)} ON ROWS
+FROM DS715
+WHERE ([Tb Supplier].[Name].Bernstein,
+		[Tb Consumer].[City].Chicago)
+
+
+///////////////////////////////////////////////////////////////////
+
+
+//10) Quantity of milk sold by supplier Bernstein to each of his milk consumers in 
+//Chicago?
+SELECT NON EMPTY {
+	[Measures].[Quantity - Tb Transactions]} ON COLUMNS,
+NON EMPTY {
+	[Tb Product].[Name].[Name].ALLMEMBERS} ON ROWS
+FROM DS715
+WHERE ([Tb Product].[Name].Milk,
+		[Tb Supplier].[Name].Bernstein,
+		[Tb Consumer].[City].Chicago)
+
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
+
+SELECT NON EMPTY {
+[Measures].[Price - Tb Transactions],
+[Measures].[Quantity - Tb Transactions] } ON COLUMNS,
+NON EMPTY {
+([Tb Supplier].[Name].[Name].ALLMEMBERS *
+[Tb Consumer].[Name].[Name].ALLMEMBERS *
+[Tb Product].[Name].[Name].ALLMEMBERS ) } ON ROWS
+FROM DS715

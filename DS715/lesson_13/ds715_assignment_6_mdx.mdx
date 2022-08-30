@@ -1,0 +1,130 @@
+//1. What are the comparative sales for each product in category transportation
+//(on rows) by months of year during 2019 (on columns) (replace with zeros
+//where nulls, format for money type)?
+WITH MEMBER Sales AS
+COALESCEEMPTY(Measures.[Sales Value], 0),
+FORMAT_STRING = '$###,###,##0.00'
+SELECT ([Tb Date].[Date Month Of Year].[Date Month Of Year],
+	 [Tb Date].[Date Month Name].[Date Month Name])  ON COLUMNS,
+	 (Sales, {[Tb Product].[Name].ALLMEMBERS}) ON ROWS
+FROM TS
+WHERE [Tb Date].[Date Year].[2019]
+
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+
+//2. Total sales during each quarter (on rows) of 2019 vs quarters of 2018 and
+//net one year growth (on columns) (use PARALLELPERIOD())?
+WITH MEMBER [Previous Quarter] AS
+COALESCEEMPTY((Measures.[Sales Value],
+PARALLELPERIOD([Tb Date].[HMQY].[Date Quarter], 1)), 0)
+MEMBER [Net Growth] AS
+Measures.[Sales Value]-[Previous Quarter]
+SELECT {Measures.[Sales Value], [Previous Quarter],
+[Net Growth]} ON COLUMNS,
+ ([Tb Date].[Date Quarter].[Date Quarter]) ON ROWS
+FROM TS
+WHERE ([Tb Date].[Date Year].[2019])//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////3. Quantity of milk sold in each consumer city (on rows) during first quarter
+//of 2019 vs first quarter of 2018 (on columns) (use PARALLELPERIOD())?WITH MEMBER [Previous Quarter] AS
+COALESCEEMPTY((Measures.[QuantitySold],
+PARALLELPERIOD([Tb Date].[HMQY].[Date Quarter], 4)), 0)
+MEMBER [Net Growth] AS
+Measures.[QuantitySold]-[Previous Quarter]
+SELECT {Measures.[QuantitySold], [Previous Quarter],
+[Net Growth]} ON COLUMNS,
+ ([Tb Consumer].[City].[City]) ON ROWS
+FROM TS
+WHERE ([Tb Date].[Date Year].[2019],		[Tb Date].[Date Quarter Of Year].[1],		[Tb Product].[Name].[Milk])//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////4. Monthly YTD quantities (on rows) sold of each product line (on columns)
+//in transportation during 2019 (use PERIODSTODATE())?WITH MEMBER [YTD Sales] AS COALESCEEMPTY(SUM(
+PERIODSTODATE([Tb Date].[HMQY].[Date Year],
+[Tb Date].[HMQY].CURRENTMEMBER),
+Measures.[Sales Value]), 0),
+FORMAT_STRING = '$###,###,##0.00'
+SELECT ([YTD Sales], 
+		{[Tb Product].[Name].Auto,
+		[Tb Product].[Name].Airplane,
+		[Tb Product].[Name].Boat}) ON COLUMNS,
+		 ([Tb Date].[Date Month].[Date Month],
+		 [Tb Date].[Date Month Name].[Date Month Name]) ON ROWS
+FROM TS
+WHERE ([Tb Date].[Date Year].[2019])
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+
+//5. Monthly YTD quantities (on rows) sold of each product line (on columns)
+//in transportation during 2019 (use YTD())?WITH MEMBER [YTD Sales] AS COALESCEEMPTY(SUM(
+YTD([Tb Date].[HMQY].CURRENTMEMBER),
+Measures.[QuantitySold]), 0)
+SELECT ([YTD Sales], {[Tb Product].[Name].Auto,
+	[Tb Product].[Name].Airplane, 
+	[Tb Product].[Name].Boat}) ON COLUMNS,
+	([Tb Date].[Date Month Name].[Date Month Name]) ON ROWS
+FROM TS
+WHERE ([Tb Date].[Date Year].[2019])
+
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+
+//6. Quantity of milk consumed in Chicago during each of the first 7 month of
+//2018 (use PERIODSTODATE())?WITH MEMBER [YTD Quantity] AS COALESCEEMPTY(SUM(
+YTD([Tb Date].[HMQY].CURRENTMEMBER),
+Measures.[QuantitySold]), 0)
+SELECT ([YTD Quantity], 
+		{[Tb Product].[Name].Milk}) ON COLUMNS,
+		 ([Tb Date].[Date Month].[Date Month],
+		 [Tb Date].[Date Month Name].[Date Month Name]) ON ROWS
+FROM TS
+WHERE ([Tb Date].[Date Year].[2018],		[Tb Consumer].[City].[Chicago])
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+
+//--1. Auto sales by each year over the entire period.
+//WITH MEMBER Sales AS COALESCEEMPTY(Measures.[Sales Value],0),
+//FORMAT_STRING = '$###,###,##0.00'
+//SELECT {Sales} ON COLUMNS,
+// [Tb Date].[Date Year].[Date Year] ON ROWS
+//FROM TS
+//WHERE [Tb Product].[Name].Auto
+//
+//--6. Comparative sales of auto vs airplane by month of year during 2019.
+//WITH MEMBER Sales AS
+//COALESCEEMPTY(Measures.[Sales Value], 0),
+//FORMAT_STRING = '$###,###,##0.00'
+//SELECT (Sales, {[Tb Product].[Name].Auto,
+//[Tb Product].[Name].Airplane}) ON COLUMNS,
+// ([Tb Date].[Date Month Of Year].[Date Month Of Year],
+// [Tb Date].[Date Month Name].[Date Month Name]) ON ROWS
+//FROM TS
+//WHERE [Tb Date].[Date Year].[2019]
+//
+//
+////--2. Monthly total sales for year 2019 and growth w.r.s.t. previous month,
+////showing month of year and month name.
+//WITH MEMBER [Previous Month] AS
+//COALESCEEMPTY((Measures.[Sales Value],
+//PARALLELPERIOD([Tb Date].[HMQY].[Date Month], 1)), 0)
+//MEMBER [Net Growth] AS
+//Measures.[Sales Value]-[Previous Month]
+//SELECT {Measures.[Sales Value], [Previous Month],
+//[Net Growth]} ON COLUMNS,
+// ([Tb Date].[Date Month].[Date Month],
+// [Tb Date].[Date Month Of Year].[Date Month Of Year],
+// [Tb Date].[Date Month Name].[Date Month Name]) ON ROWS
+//FROM TS
+//WHERE ([Tb Date].[Date Year].[2019])
