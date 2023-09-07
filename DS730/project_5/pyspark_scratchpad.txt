@@ -1,0 +1,355 @@
+from pyspark.sql.functions import when
+from pyspark.sql.functions import lit
+from pyspark.sql.functions import *
+
+%pyspark
+numbers = [1,2,3,4,5,6]
+print(numbers)
+
+
+%pyspark
+wap = sc.textFile("/user/zeppelin/wap.txt")
+
+%pyspark
+wap.collect()
+
+%pyspark
+wap_words = wap.flatMap(lambda line: line.split(" "))
+
+wap_words.count()
+
+%pyspark
+wap.count()
+
+%pyspark
+from pyspark.sql.functions import *
+wap_df = (spark.read.text("/user/zeppelin/wap.txt")
+                .withColumnRenamed("value", "lines")
+                .select("lines", explode(split("lines", " ")).alias("words"))
+                .withColumn("words_lower", lower(col("words"))))
+                
+(wap_df
+    .filter(col("words") != " ")
+    .groupBy("words_lower")
+    .agg(count("*").alias("word_count"))
+    .filter(col("word_count").isin(range(5, 8)))
+    .orderBy(col("word_count"), ascending = False)
+    .select("words_lower").show())
+
+%pyspark
+wap_df.show(n = 10)
+
+wap_df.select("lines", explode(split("lines", " ")).alias("words"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%pyspark
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/smaller.csv")
+
+
+%pyspark
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+taxi.show(n = 10)
+
+taxi.select(taxi["passenger_count"], taxi["tip_amount"]).show()
+
+taxi.filter(taxi["passenger_count"] > 5).show()
+
+taxi.filter(taxi["passenger_count"] > 5).filter(taxi["tip_amount"] > 10).select(taxi["passenger_count"], taxi["tip_amount"]).show()
+
+taxi.groupBy(taxi["passenger_count"]).avg("tip_amount").show()
+
+taxi.printSchema()
+
+ |-- VendorID: integer (nullable = true)
+ |-- tpep_pickup_datetime: string (nullable = true)
+ |-- tpep_dropoff_datetime: string (nullable = true)
+ |-- passenger_count: integer (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: integer (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: integer (nullable = true)
+ |-- DOLocationID: integer (nullable = true)
+ |-- payment_type: integer (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ 
+from pyspark.sql.functions import when
+taxi2 = taxi.withColumn("multiple_passenger_flag", when(taxi.passenger_count == 1, 0).otherwise(1))
+taxi2.select(taxi2["passenger_count"], taxi2["multiple_passenger_flag"]).show(n = 10)
+taxi2.select("passenger_count", "multiple_passenger_flag").show(n = 10)
+taxi2.groupBy("multiple_passenger_flag").count()
+
+taxi2 = taxi.withColumn("toll_flag", when(taxi.tolls_amount > 0, 1).otherwise(0))
+taxi2.select(taxi2["tolls_amount"], taxi2["toll_flag"]).show(n = 10)
+taxi2.select("tolls_amount", "toll_flag").show(n = 10)
+taxi2.select(taxi2["tolls_amount"], taxi2["toll_flag"]) \
+    .(filter(taxi2["tolls_amount"] > 0).show(n = 10)
+    
+taxi2.groupBy("toll_flag").avg("trip_distance").show()
+
+taxi.select("tpep_pickup_datetime").show(n = 10)
+taxi.select("tpep_pickup_datetime").head()[0]
+
+from pyspark.sql.functions import *
+taxi2 = taxi.withColumn("pickup", to_timestamp("tpep_pickup_datetime", "MM-dd-yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("pickup_month", month("pickup"))
+taxi2 = taxi2.withColumn("fare_amount_float", taxi2["fare_amount"].cast("float"))
+taxi2 = taxi2.withColumn("trip_distance_float", taxi2["trip_distance"].cast("float"))
+taxi2 = taxi2.withColumn("fare_per_distance", taxi2["fare_amount_float"] / taxi2["trip_distance_float"])
+taxi2 = taxi2.filter(taxi2["fare_per_distance"] <= 10000).filter(taxi2["fare_amount"] > 0)
+
+
+taxi2.select("fare_amount", "trip_distance", "fare_per_distance").show(n = 10)
+taxi2 = taxi2.withColumn("pickup_month", month("pickup"))
+
+fare_amount_sum_by_pickup_month_df = taxi2.groupBy("pickup_month").agg({"fare_amount": "sum"})
+taxi2 = taxi2.join(fare_amount_sum_by_pickup_month_df, "pickup_month", how = "left").withColumnRenamed("sum(fare_amount)", "fare_amount_sum_by_pickup_month")
+.withColumnRenamed('sum(my_variable)', 'sum_my_variable')
+
+trip_count_by_pickup_month_df = taxi2.groupBy("pickup_month").agg(count('*').alias('trip_count_by_pickup_month'))
+
+
+taxi2 = taxi.withColumn("fare_amount_float", taxi2["fare_amount"].cast("float"))
+taxi2 = taxi2.withColumn("trip_distance_float", taxi2["trip_distance"].cast("float"))
+taxi2 = taxi2.withColumn("fare_per_distance", taxi2["fare_amount_float"] / taxi2["trip_distance_float"])
+taxi2 = taxi2.filter(taxi2["fare_per_distance"] <= 10000).filter(taxi2["fare_amount"] > 0)
+
+from pyspark.sql.functions import *
+taxi2 = (taxi.withColumn("pickup", to_timestamp("tpep_pickup_datetime", "MM-dd-yyyy hh:mm:ss a")) 
+    .withColumn("pickup_month", month("pickup")) 
+    .withColumn("fare_amount_float", col("fare_amount").cast("float")) 
+    .withColumn("trip_distance_float", col("trip_distance").cast("float")) 
+    .withColumn("fare_per_distance", col("fare_amount_float") / col("trip_distance_float")) 
+    .filter(col("fare_per_distance") <= 10000).filter(col("fare_amount") > 0))
+    
+    
+    
+#(taxi2.withColumn("fare_amount_avg_by_pickup_month", col("fare_amount_sum_by_pickup_month") / col("trip_count_by_pickup_month"))
+ #   .select("fare_amount_sum_by_pickup_month", "trip_count_by_pickup_month", "fare_amount_avg_by_pickup_month").show())
+#fare_amount_avg_by_pickup_month_df = taxi2.groupBy("pickup_month").agg(mean("fare_amount")).alias("fare_amount_avg_by_pickup_month")
+
+
+
+taxi2 = (taxi2.groupBy("before_noon_dropoff_flag")
+    .agg(sum(col("tip_amount")).alias("tip_amount_sum"), sum(col("fare_amount")).alias("fare_amount_sum")))
+
+taxi2.withColumn("tip_rate", col("tip_amount_sum") / col("fare_amount_sum")
+
+
+taxi2.withColumn("trip_duration_seconds", unix_timestamp(col("tpep_dropoff_datetime")) - unix_timestamp(col("tpep_dropoff_datetime")))
+taxi2.withColumn("trip_duration_seconds", unix_timestamp("pickup") - unix_timestamp("dropoff"))
+taxi2.withColumn("trip_duration_seconds", (unix_timestamp(col("pickup")) - unix_timestamp(col("dropoff")))
+  
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+  
+    
+%pyspark
+
+# question 1
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+# get record count
+taxi.count()
+
+ 
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+
+
+%pyspark
+
+# question 2
+
+from pyspark.sql.functions import *
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+# get multiple_passenger_flag
+taxi2 = taxi.withColumn("multiple_passenger_flag", when(taxi.passenger_count == 1, 0).otherwise(1))
+
+# get trip count by multiple_passenger_flag group
+taxi2.groupBy("multiple_passenger_flag").count().show()
+  
+
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+  
+
+# question 3
+
+from pyspark.sql.functions import *
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+# get toll_flag
+taxi2 = taxi.withColumn("toll_flag", when(taxi.tolls_amount > 0, 1).otherwise(0))
+
+# show avg trip_distance by toll_flag group
+taxi2.groupBy("toll_flag").avg("trip_distance").show()
+
+
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+
+  
+# question 4
+    
+from pyspark.sql.functions import *
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+# get fare_per_distance, and filter down to fare_per_distance <= 10000, and fare_amount > 0
+taxi2 = taxi.withColumn("fare_amount_float", taxi2["fare_amount"].cast("float"))
+taxi2 = taxi2.withColumn("trip_distance_float", taxi2["trip_distance"].cast("float"))
+taxi2 = taxi2.withColumn("fare_per_distance", taxi2["fare_amount_float"] / taxi2["trip_distance_float"])
+taxi2 = taxi2.filter(taxi2["fare_per_distance"] <= 10000).filter(taxi2["fare_amount"] > 0)
+
+# get pickup as timestamp, and get pickup_month
+taxi2 = taxi2.withColumn("pickup", to_timestamp("tpep_pickup_datetime", "MM/dd/yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("pickup_month", month("pickup"))
+
+# add fare_amount_sum_by_pickup_month
+fare_amount_sum_by_pickup_month_df = taxi2.groupBy("pickup_month").agg({"fare_amount": "sum"})
+taxi2 = taxi2.join(fare_amount_sum_by_pickup_month_df, "pickup_month", how = "left").withColumnRenamed("sum(fare_amount)", "fare_amount_sum_by_pickup_month")
+
+# add trip_count_by_pickup_month
+trip_count_by_pickup_month_df = taxi2.groupBy("pickup_month").agg(count("*").alias("trip_count_by_pickup_month"))
+taxi2 = taxi2.join(trip_count_by_pickup_month_df, "pickup_month", how = "left")
+
+# get fare_amount_avg_by_pickup_month and output months with highest avg fare_amount
+(taxi2
+    .withColumn("fare_amount_avg_by_pickup_month", col("fare_amount_sum_by_pickup_month") / col("trip_count_by_pickup_month"))
+    .select("pickup_month", "fare_amount_avg_by_pickup_month")
+    .distinct()
+    .orderBy(col("pickup_month").desc())
+    .show())
+
+
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+
+
+# question 5
+
+from pyspark.sql.functions import *
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+# filter down to just trips paid for with credit card
+taxi2 = taxi.filter(col("payment_type") == 1)
+
+# get dropoff as timestamp, and get dropoff_hour
+taxi2 = taxi2.withColumn("dropoff", to_timestamp("tpep_dropoff_datetime", "MM/dd/yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("dropoff_hour", hour("dropoff"))
+
+# create before_noon_dropoff_flag
+taxi2 = taxi2.withColumn("before_noon_dropoff_flag", when(col("dropoff_hour") < 12, 1).otherwise(0))
+
+# by before_noon_dropoff_flag groups, get tip_amount_sum, fare_amount_sum; 
+# then get tip_rate and show output
+(taxi2.groupBy("before_noon_dropoff_flag")
+    .agg(sum(col("tip_amount")).alias("tip_amount_sum"), sum(col("fare_amount")).alias("fare_amount_sum"))
+    .withColumn("tip_rate", col("tip_amount_sum") / col("fare_amount_sum"))
+    .select("before_noon_dropoff_flag", "tip_rate")
+    .show(n = 10))
+
+
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+
+
+# question 6
+    
+from pyspark.sql.functions import *
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+    
+# filter down to trip_distance > 0
+taxi2 = taxi.filter(col("trip_distance") > 0)
+
+# get pickup as timestamp, and get pickup_month
+taxi2 = taxi2.withColumn("pickup", to_timestamp("tpep_pickup_datetime", "MM/dd/yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("pickup_month", month("pickup"))
+
+# get dropoff as timestamp, and get dropoff_hour
+taxi2 = taxi2.withColumn("dropoff", to_timestamp("tpep_dropoff_datetime", "MM/dd/yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("dropoff_hour", hour("dropoff"))
+
+# get trip_duration_seconds, then calculate trip_duration_per_distance as trip_duration_seconds / trip_distance, 
+# then output records with highest trip_duration_per_distance
+(taxi2.withColumn("trip_duration_seconds", col("dropoff").cast("long") - col("pickup").cast("long"))
+                .withColumn("trip_duration_per_distance", col("trip_duration_seconds") / col("trip_distance"))
+                .orderBy(col("trip_duration_per_distance").desc())
+                .show(n = 10))
+
+
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+
+
+# question 7
+    
+from pyspark.sql.functions import *
+
+# read in taxi data
+taxi = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/taxi/taxi2018.csv")
+
+# filter down to total_amount <= 200
+taxi2 = taxi.filter(col("total_amount") <= 200)
+    
+# get pickup as timestamp, and get pickup_hour
+taxi2 = taxi2.withColumn("pickup", to_timestamp("tpep_pickup_datetime", "MM/dd/yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("pickup_hour", hour("pickup"))
+
+# get dropoff as timestamp, and get dropoff_hour
+taxi2 = taxi2.withColumn("dropoff", to_timestamp("tpep_dropoff_datetime", "MM/dd/yyyy hh:mm:ss a"))
+taxi2 = taxi2.withColumn("dropoff_hour", hour("dropoff"))
+
+# filter pickup_hour to after 4pm and dropoff_hour to before 12am
+taxi2 = taxi2.filter(col("pickup_hour") >= 16).filter(col("dropoff_hour") <= 23)
+
+# get window_spec
+window_spec = window("pickup", "3600 seconds")
+
+# group by window and get total_amount_avg
+taxi2 = taxi2.groupBy(window_spec).agg(mean("total_amount").alias("total_amount_avg"))
+
+# show hours with the highest total_amount_avg
+taxi2.orderBy(col("total_amount_avg"), ascending = False).show(n = 10, truncate = False)

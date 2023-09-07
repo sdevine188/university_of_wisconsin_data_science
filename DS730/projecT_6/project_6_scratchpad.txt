@@ -1,0 +1,558 @@
+%pyspark
+
+from pyspark.sql.functions import *
+
+# read in data
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0"))))
+         
+            
+
+oshkosh.show(n = 10)
+
+df.withColumn("padded_col", lpad(col("string_col"), 2, "0"))
+
+oshkosh.columns
+oshkosh.dtypes
+[('Year', 'int'), ('Month', 'int'), ('Day', 'int'), ('TimeCST', 'string'), ('TemperatureF', 'double'), ('Dew PointF', 'double'), 
+('Humidity', 'string'), ('Sea Level PressureIn', 'double'), ('VisibilityMPH', 'double'), ('Wind Direction', 'string'), 
+('Wind SpeedMPH', 'string'), ('Gust SpeedMPH', 'string'), ('PrecipitationIn', 'string'), ('Events', 'string'), ('Conditions', 'string'), 
+('WindDirDegrees', 'int')]
+
+# inspect
+humidity
+wind speed
+gust speed
+precip
+
+oshkosh.count
+176795
+
+oshkosh.agg(*(min(col(x)).alias(x) for x in oshkosh.columns)).show(n = 10)
+oshkosh.agg(*(max(col(x)).alias(x) for x in oshkosh.columns)).show(n = 10)
+
+oshkosh2 = oshkosh.withColumn("Humidity2", col("Humidity").cast("float"))
+oshkosh2.select(col("Humidity"), col("Humidity2")).show(n = 10)
+oshkosh2.select(col("Humidity"), col("Humidity2")).filter(col("Humidity2").isNull()).show(n = 10)
+(oshkosh2.select(col("Humidity"), col("Humidity2"))
+    .filter(col("Humidity2").isNull())
+    .groupBy(col("Humidity"))
+    .agg(count("*").alias("n"))
+    .orderBy(col("n"), ascending = False)
+    .show(n = 10))
+    
+(oshkosh2.select(col("Wind SpeedMPH"), col("Wind SpeedMPH2"))
+    .filter(col("Wind SpeedMPH2").isNull())
+    .groupBy(col("Wind SpeedMPH"))
+    .agg(count("*").alias("n"))
+    .orderBy(col("n"), ascending = False)
+    .show(n = 10))
+    
+    
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# read in iowa  
+iowa = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/IowaCity/IowaCityWeather.csv")    
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0"))))
+            
+iowa.columns
+iowa.dtypes
+
+iowa.agg(*(min(col(x)).alias(x) for x in iowa.columns)).show(n = 10)
+iowa.agg(*(max(col(x)).alias(x) for x in iowa.columns)).show(n = 10)
+
+
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem 1a
+
+%pyspark
+
+
+from pyspark.sql.functions import *
+
+# read in oshkosh
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))) 
+
+        
+# get count of cold days   
+(oshkosh.withColumn("cold_flag", when(col("TemperatureF") <= -10, 1)
+                                .otherwise(lit(0)))
+        .filter(col("cold_flag") == 1)
+        .groupBy(col("date"))
+        .agg(count("*").alias("n"))
+        .count())
+
+# get count of hot days
+(oshkosh.withColumn("hot_flag", when(col("TemperatureF") >= 95, 1)
+                                .otherwise(lit(0)))
+        .filter(col("hot_flag") == 1)
+        .groupBy(col("date"))
+        .agg(count("*").alias("n"))
+        .count())
+        
+        
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem 2a
+
+%pyspark
+
+from pyspark.sql.functions import *
+
+# read in oshkosh
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))) 
+
+# get temperature_avg by season      
+oshkosh_seasons = (oshkosh.withColumn("season", when(col("Month").isin([12, 1, 2]), "winter")
+                                .when(col("Month").isin([3, 4, 5]), "spring")
+                                .when(col("Month").isin([6, 7, 8]), "summer")
+                                .when(col("Month").isin([9, 10, 11]), "fall")
+                                .otherwise(lit("none")))
+        .groupBy(col("season"))
+        .agg(count("*").alias("n_oshkosh"),
+            sum(col("TemperatureF")).alias("temperature_sum_oshkosh"))
+        .withColumn("temperature_avg_oshkosh", col("temperature_sum_oshkosh") / col("n_oshkosh")))
+            
+            
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# read in iowa  
+iowa = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/IowaCity/IowaCityWeather.csv")    
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))) 
+
+# get temperature_avg by season      
+iowa_seasons = (iowa.withColumn("season", when(col("Month").isin([12, 1, 2]), "winter")
+                                .when(col("Month").isin([3, 4, 5]), "spring")
+                                .when(col("Month").isin([6, 7, 8]), "summer")
+                                .when(col("Month").isin([9, 10, 11]), "fall")
+                                .otherwise(lit("none")))
+        .groupBy(col("season"))
+        .agg(count("*").alias("n_iowa"),
+            sum(col("TemperatureF")).alias("temperature_sum_iowa"))
+        .withColumn("temperature_avg_iowa", col("temperature_sum_iowa") / col("n_iowa")))
+        
+        
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+       
+# join oshkosh_seasons and iowa_seasons, and calculate temperature difference per season   
+(oshkosh_seasons.join(iowa_seasons, "season", how = "left")
+                           .withColumn("temperature_diff", col("temperature_avg_oshkosh") - col("temperature_avg_iowa"))
+                           .select(col("season"), col("temperature_avg_oshkosh"), col("temperature_avg_iowa"), col("temperature_diff"))
+                           .show(n = 10))
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem 1c
+
+%pyspark
+
+from pyspark.sql.functions import *
+
+# read in oshkosh
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))) 
+             
+# get window_spec
+window_spec = window("date", "7 days")
+
+# group by window and get temp_avg
+(oshkosh
+        .groupBy(window_spec)
+        .agg(mean("TemperatureF").alias("temp_avg"))
+        .orderBy(col("temp_avg"), ascending = False)
+        .show(n = 10, truncate = False))
+
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem 1d
+
+%pyspark
+
+from pyspark.sql.functions import *
+
+# read in oshkosh
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))
+            .withColumn("time", to_timestamp("TimeCST", "hh:mm a"))
+            .withColumn("hour", hour("time"))) 
+      
+# by date/hour, get the average temperature    
+oshkosh_hourly_temp_avg = (oshkosh
+        .select(col("date"), col("hour"), col("TemperatureF"))
+        .groupBy(col("date"), col("hour"))
+        .agg(mean("TemperatureF").alias("temp_avg"))
+        .orderBy(col("date"), col("hour"))) 
+
+# by date, get the minimum hourly temperature average        
+oshkosh_daily_min_temp_avg = (oshkosh_hourly_temp_avg
+    .groupBy(col("date"))
+    .agg(min(col("temp_avg")).alias("temp_avg"))
+    .orderBy(col("date")))
+
+# join oshkosh_hourly_temp_avg to oshkosh_daily_min_temp_avg to add back the hour variable, 
+# then count which hours most frequently had the coldest average temperature
+(oshkosh_daily_min_temp_avg
+    .join(oshkosh_hourly_temp_avg, on = ["date", "temp_avg"], how = "left")
+    .groupBy(col("hour"))
+    .agg(count("*").alias("n"))
+    .orderBy(col("n"), ascending = False)
+    .show(n = 10))
+
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem 1e
+
+%pyspark
+
+from pyspark.sql.functions import *
+
+# read in oshkosh
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))
+            .withColumn("time", to_timestamp("TimeCST", "hh:mm a"))
+            .withColumn("hour", hour("time"))
+            .withColumn("date_time", concat(col("date"), lit(" "), col("TimeCST")))
+            .withColumn("date_time_stamp", to_timestamp(col("date_time"), "yyyy-MM-dd HH:mm a")))
+
+# get window_spec
+window_spec = window("date_time_stamp", "24 hours")
+
+# group by window and get temp_diff
+oshkosh_temp_diff = (oshkosh
+        .groupBy(window_spec)
+        .agg(min("TemperatureF").alias("temp_min"),
+            max("TemperatureF").alias("temp_max"))
+        .withColumn("temp_diff", col("temp_max") - col("temp_min"))
+        .orderBy(col("temp_diff"), ascending = False))
+
+# find the time period when the largest temp_diff occurred
+(oshkosh_temp_diff
+    .withColumn("time_start", col("window.start"))
+    .withColumn("time_end", col("window.end"))
+    .withColumn("time_start_unix", unix_timestamp("time_start"))
+    .withColumn("time_end_unix", unix_timestamp("time_end"))
+    .withColumn("time_diff_unix", col("time_end_unix") - col("time_start_unix"))
+    .withColumn("time_diff_hours", col("time_diff_unix") / 60 / 60)
+    .show(n = 1))
+
+
+#////////////////////////////////////
+
+
+# read in iowa
+iowa = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/IowaCity/IowaCityWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))
+            .withColumn("time", to_timestamp("TimeCST", "hh:mm a"))
+            .withColumn("hour", hour("time"))
+            .withColumn("date_time", concat(col("date"), lit(" "), col("TimeCST")))
+            .withColumn("date_time_stamp", to_timestamp(col("date_time"), "yyyy-MM-dd HH:mm a")))
+
+# get window_spec
+window_spec = window("date_time_stamp", "24 hours")
+
+# group by window and get temp_diff
+iowa_temp_diff = (iowa
+        .groupBy(window_spec)
+        .agg(min("TemperatureF").alias("temp_min"),
+            max("TemperatureF").alias("temp_max"))
+        .withColumn("temp_diff", col("temp_max") - col("temp_min"))
+        .orderBy(col("temp_diff"), ascending = False))
+
+# find the time period when the largest temp_diff occurred
+(iowa_temp_diff
+    .withColumn("time_start", col("window.start"))
+    .withColumn("time_end", col("window.end"))
+    .withColumn("time_start_unix", unix_timestamp("time_start"))
+    .withColumn("time_end_unix", unix_timestamp("time_end"))
+    .withColumn("time_diff_unix", col("time_end_unix") - col("time_start_unix"))
+    .withColumn("time_diff_hours", col("time_diff_unix") / 60 / 60)
+    .show(n = 1))
+
+
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem 1f
+
+%pyspark
+
+from pyspark.sql.functions import *
+
+# read in oshkosh
+oshkosh = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/Oshkosh/OshkoshWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))
+            .withColumn("time", to_timestamp("TimeCST", "hh:mm a"))
+            .withColumn("hour", hour("time"))
+            .withColumn("date_time", concat(col("date"), lit(" "), col("TimeCST")))
+            .withColumn("date_time_stamp", to_timestamp(col("date_time"), "yyyy-MM-dd HH:mm a")))
+
+# get oshkosh temperature difference from 50 degrees            
+oshkosh_temp_diff = (oshkosh
+    .groupBy(col("Month"), col("hour"))
+    .agg(mean(col("TemperatureF")).alias("temp_avg"),
+        mean(col("Wind SpeedMPH")).alias("wind_avg"))
+    .withColumn("abs_temp_diff_from_50", abs(col("temp_avg") - 50)))
+    
+oshkosh_best_monthly_temp = (oshkosh_temp_diff
+    .groupBy(col("Month"))
+    .agg(min(col("abs_temp_diff_from_50")).alias("abs_temp_diff_from_50"))
+    .join(oshkosh_temp_diff, on = ["Month", "abs_temp_diff_from_50"], how = "left")
+    .orderBy(col("Month"), ascending = True)
+    .withColumnRenamed("hour", "hour_oshkosh")
+    .withColumnRenamed("abs_temp_diff_from_50", "abs_temp_diff_from_50_oshkosh")
+    .withColumnRenamed("wind_avg", "wind_avg_oshkosh")
+    .withColumnRenamed("temp_avg", "temp_avg_oshkosh"))
+    
+#////////////////////////////////////
+
+
+# read in iowa
+iowa = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/maria_dev/final/IowaCity/IowaCityWeather.csv")
+            .withColumn("Humidity", col("Humidity").cast("float"))
+            .withColumn("Wind SpeedMPH", col("Wind SpeedMPH").cast("float"))
+            .withColumn("Gust SpeedMPH", col("Gust SpeedMPH").cast("float"))
+            .withColumn("PrecipitationIn", col("PrecipitationIn").cast("float"))
+            .withColumn("TemperatureF", when(col("TemperatureF") == -9999, lit(None))
+                                        .otherwise(col("TemperatureF")))
+            .withColumn("Dew PointF", when(col("Dew PointF") == -9999, lit(None))
+                                        .otherwise(col("Dew PointF")))
+            .withColumn("Sea Level PressureIn", when(col("Sea Level PressureIn") == -9999, lit(None))
+                                        .otherwise(col("Sea Level PressureIn")))
+            .withColumn("VisibilityMPH", when(col("VisibilityMPH") == -9999, lit(None))
+                                        .otherwise(col("VisibilityMPH")))
+            .withColumn("Wind SpeedMPH", when(col("Wind SpeedMPH") == -9999, lit(None))
+                                        .otherwise(col("Wind SpeedMPH")))
+            .withColumn("date", concat(col("Year"), lpad(col("Month"), 2, "0"), lpad(col("Day"), 2, "0")))
+            .withColumn("date", to_date(col("date"), "yyyyMMdd"))
+            .withColumn("time", to_timestamp("TimeCST", "hh:mm a"))
+            .withColumn("hour", hour("time"))
+            .withColumn("date_time", concat(col("date"), lit(" "), col("TimeCST")))
+            .withColumn("date_time_stamp", to_timestamp(col("date_time"), "yyyy-MM-dd HH:mm a")))
+
+# get iowa city temperature difference from 50 degrees            
+iowa_temp_diff = (iowa
+    .groupBy(col("Month"), col("hour"))
+    .agg(mean(col("TemperatureF")).alias("temp_avg"),
+        mean(col("Wind SpeedMPH")).alias("wind_avg"))
+    .withColumn("abs_temp_diff_from_50", abs(col("temp_avg") - 50)))
+
+# by month, get the hour with the best temperature    
+iowa_best_monthly_temp = (iowa_temp_diff
+    .groupBy(col("Month"))
+    .agg(min(col("abs_temp_diff_from_50")).alias("abs_temp_diff_from_50"))
+    .join(iowa_temp_diff, on = ["Month", "abs_temp_diff_from_50"], how = "left")
+    .orderBy(col("Month"), ascending = True)
+    .withColumnRenamed("hour", "hour_iowa")
+    .withColumnRenamed("abs_temp_diff_from_50", "abs_temp_diff_from_50_iowa")
+    .withColumnRenamed("wind_avg", "wind_avg_iowa")
+    .withColumnRenamed("temp_avg", "temp_avg_iowa"))
+    
+    
+#////////////////////////////////////
+
+
+# join oshkosh_best_monthly_temp and iowa_best_monthly_temp 
+best_monthly_temp = (oshkosh_best_monthly_temp   
+    .join(iowa_best_monthly_temp, on = ["Month"], how = "left")
+    .orderBy(col("Month")))
+    
+# find the best city/hour for each month
+(best_monthly_temp
+    .withColumn("abs_temp_diff_from_50_best", when(col("abs_temp_diff_from_50_oshkosh") < col("abs_temp_diff_from_50_iowa"), 
+            col("abs_temp_diff_from_50_oshkosh"))
+        .when(col("abs_temp_diff_from_50_oshkosh") > col("abs_temp_diff_from_50_iowa"), 
+            col("abs_temp_diff_from_50_iowa"))
+        .otherwise("tie"))
+    .withColumn("best_temp_avg", when(col("abs_temp_diff_from_50_oshkosh") < col("abs_temp_diff_from_50_iowa"), 
+            col("temp_avg_oshkosh"))
+        .when(col("abs_temp_diff_from_50_oshkosh") > col("abs_temp_diff_from_50_iowa"), 
+            col("temp_avg_iowa"))
+        .otherwise("tie"))
+    .withColumn("best_city", when(col("abs_temp_diff_from_50_oshkosh") < col("abs_temp_diff_from_50_iowa"), 
+            "oshkosh")
+        .when(col("abs_temp_diff_from_50_oshkosh") > col("abs_temp_diff_from_50_iowa"), 
+            "iowa")
+        .otherwise("tie"))
+    .withColumn("best_hour", when(col("abs_temp_diff_from_50_oshkosh") < col("abs_temp_diff_from_50_iowa"), 
+            col("hour_oshkosh"))
+        .when(col("abs_temp_diff_from_50_oshkosh") > col("abs_temp_diff_from_50_iowa"), 
+            col("hour_iowa"))
+        .otherwise("tie"))
+    .select("Month", "best_city", "best_hour", "best_temp_avg")
+    .show(n = 15))
+        
+        

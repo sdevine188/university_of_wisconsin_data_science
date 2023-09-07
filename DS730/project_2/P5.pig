@@ -1,0 +1,13 @@
+fielding = LOAD 'hdfs:/user/maria_dev/pigtest/Fielding.csv' using PigStorage(',');
+player_position_team_year_errors = FOREACH fielding GENERATE $0 AS player_id, $1 AS year, $2 AS team, $4 as position, $10 AS errors;
+player_position_team_year_errors = DISTINCT player_position_team_year_errors;
+player_position_team_year_errors_post_1950 = FILTER player_position_team_year_errors BY year > 1950;
+player_position_team_year_errors_post_1950_grouped = GROUP player_position_team_year_errors_post_1950 BY (player_id, team);
+player_team_sum_errors_post_1950 = FOREACH player_position_team_year_errors_post_1950_grouped GENERATE FLATTEN(group), SUM(player_position_team_year_errors_post_1950.errors) AS sum_errors;
+player_team_sum_errors_post_1950_ranked = RANK player_team_sum_errors_post_1950 BY sum_errors DESC DENSE;
+player_team_sum_errors_post_1950_ranked = ORDER player_team_sum_errors_post_1950_ranked BY sum_errors DESC;
+player_team_sum_errors_post_1950_ranked = FOREACH player_team_sum_errors_post_1950_ranked GENERATE $0 AS rank, $1 AS player_id, $2 AS team, sum_errors;
+player_team_w_max_sum_errors = FILTER player_team_sum_errors_post_1950_ranked BY rank == 1;
+player_team_w_max_sum_errors = FOREACH player_team_w_max_sum_errors GENERATE player_id, team;
+player_team_w_max_sum_errors = LIMIT player_team_w_max_sum_errors 10;
+DUMP player_team_w_max_sum_errors;

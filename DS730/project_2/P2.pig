@@ -1,0 +1,14 @@
+master = LOAD 'hdfs:/user/maria_dev/pigtest/Master.csv' using PigStorage(',');
+player_birth_month_year = FOREACH master GENERATE $0 AS player_id, $2 AS birth_month, $1 AS birth_year;
+player_birth_month_year = FILTER player_birth_month_year BY (birth_month > 0) AND (birth_year > 0);
+player_birth_month_year = FOREACH player_birth_month_year GENERATE player_id, CONCAT(birth_month, '/', birth_year) AS birth_month_year;
+player_birth_month_year = DISTINCT player_birth_month_year;
+player_birth_month_year_grouped = GROUP player_birth_month_year BY birth_month_year;
+birth_month_year_count = FOREACH player_birth_month_year_grouped GENERATE group AS birth_month_year, COUNT(player_birth_month_year.player_id) AS player_id_count;
+birth_month_year_count_ranked = RANK birth_month_year_count BY player_id_count DESC DENSE;
+birth_month_year_count_ranked = ORDER birth_month_year_count_ranked BY player_id_count DESC;
+birth_month_year_count_ranked = FOREACH birth_month_year_count_ranked GENERATE $0 AS rank, birth_month_year, player_id_count;
+top_3_birth_month_year = FILTER birth_month_year_count_ranked BY rank IN (1, 2, 3);
+top_3_birth_month_year = FOREACH top_3_birth_month_year GENERATE birth_month_year;
+top_3_birth_month_year = LIMIT top_3_birth_month_year 10;
+DUMP top_3_birth_month_year;

@@ -1,0 +1,70 @@
+
+%pyspark
+
+# problem a
+
+from pyspark.sql.functions import *
+
+wap_df = (spark.read.text("/user/zeppelin/wap.txt")
+                .withColumnRenamed("value", "lines")
+                .select("lines", explode(split("lines", " ")).alias("words"))
+                .withColumn("words_lower", lower(col("words"))))
+                
+(wap_df
+    .filter(col("words") != " ")
+    .groupBy("words_lower")
+    .agg(count("*").alias("word_count"))
+    .filter(col("word_count").isin(range(5, 8)))
+    .orderBy(col("word_count"), ascending = False)
+    .select("words_lower")
+    .show(n = 3000, truncate = False))
+    
+    
+#/////////////////////////////////////////////////////////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem b
+
+from pyspark.sql.functions import *
+
+(spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/smaller.csv")
+            .select("fare_amount", "tip_amount")
+            .withColumn("fare_amount_group", when(col("fare_amount") < 25, "fare_0_to_25")
+                                        .when((col("fare_amount") >= 25) & (col("fare_amount") < 50), "fare_25_to_50")
+                                        .when((col("fare_amount") >= 50) & (col("fare_amount") < 75), "fare_50_to_75")
+                                        .when(col("fare_amount") >= 75, "fare_75_and_over"))
+            .groupBy("fare_amount_group")
+            .agg(sum(col("fare_amount")).alias("fare_amount_sum"),
+                sum(col("tip_amount")).alias("tip_amount_sum"))
+            .withColumn("tip_percentage", col("tip_amount_sum") / col("fare_amount_sum"))
+            .select("fare_amount_group", "tip_percentage")
+            .show(n = 10))    
+
+
+#/////////////////////////////////////////////////////////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# problem c
+
+from pyspark.sql.functions import *
+from pyspark.sql.window import Window
+
+
+taxi_fares = (spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/user/zeppelin/smaller.csv")
+            .select("fare_amount", "trip_distance")
+            .filter(col("trip_distance") > 0)
+            .filter(col("fare_amount") > 0)
+            .withColumn("fare_amount_per_distance", col("fare_amount") / col("trip_distance"))
+            .orderBy(col("fare_amount_per_distance"), ascending = False))
+
+window_spec = Window.orderBy(desc("fare_amount_per_distance"))
+
+(taxi_fares
+    .select("fare_amount_per_distance")
+    .withColumn("rank", dense_rank().over(window_spec))
+    .show(n = 10))
+
